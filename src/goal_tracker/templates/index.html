@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simple Goal Tracker</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <main class="page-shell">
+    <header class="page-header">
+      <p class="eyebrow">Focus board</p>
+      <h1>Simple Goal Tracker</h1>
+      <p class="intro">Keep today's intentions visible and move them forward.</p>
+    </header>
+
+    <section class="goal-composer" aria-labelledby="new-goal-heading">
+      <h2 id="new-goal-heading">Add a goal</h2>
+      <form method="post" action="{{ url_for('create_goal') }}">
+        <label for="title">Goal title</label>
+        <input id="title" name="title" type="text" maxlength="200" required
+               aria-label="Goal title" placeholder="What will you accomplish?">
+        <label for="description">Description <span>(optional)</span></label>
+        <textarea id="description" name="description" maxlength="2000"
+                  aria-label="Goal description" rows="3"></textarea>
+        <button type="submit">Add goal</button>
+      </form>
+    </section>
+
+    <section class="goal-board" aria-labelledby="goals-heading">
+      <div class="section-heading">
+        <h2 id="goals-heading">Your goals</h2>
+        <span class="goal-count">{{ goals|length }}</span>
+      </div>
+      <div aria-live="polite" role="status">
+        {% with notices = get_flashed_messages() %}
+          {% if message %}<p class="feedback">{{ message }}</p>{% endif %}
+          {% for notice in notices %}<p class="feedback">{{ notice }}</p>{% endfor %}
+        {% endwith %}
+      </div>
+      {% if goals %}
+        <div class="goal-list">
+          {% for goal in goals %}
+            <article class="goal-card{% if goal.completed %} is-complete{% endif %}"
+                     data-goal-id="{{ goal.id }}">
+              <div class="goal-content">
+                <p class="goal-status">{% if goal.completed %}Completed{% else %}Incomplete{% endif %}</p>
+                <h3>{{ goal.title }}</h3>
+                {% if goal.description %}<p class="goal-description">{{ goal.description }}</p>{% endif %}
+              </div>
+              <div class="goal-actions">
+                {% if not goal.completed %}
+                  <form method="post" action="{{ url_for('complete_goal', goal_id=goal.id) }}">
+                    <button type="submit" aria-label="Complete {{ goal.title }}">Complete</button>
+                  </form>
+                {% endif %}
+                <details>
+                  <summary>Edit</summary>
+                  <form method="post" action="{{ url_for('edit_goal', goal_id=goal.id) }}">
+                    <label for="edit-title-{{ goal.id }}">Goal title</label>
+                    <input id="edit-title-{{ goal.id }}" name="title" value="{{ goal.title }}"
+                           maxlength="200" required>
+                    <label for="edit-description-{{ goal.id }}">Description</label>
+                    <textarea id="edit-description-{{ goal.id }}" name="description"
+                              maxlength="2000" rows="2">{{ goal.description }}</textarea>
+                    <button type="submit">Save changes</button>
+                  </form>
+                </details>
+                <form method="post" action="{{ url_for('remove_goal', goal_id=goal.id) }}"
+                      onsubmit="return confirm('Remove this goal?');">
+                  <input type="hidden" name="confirm" value="yes">
+                  <button type="submit" class="button-subtle" aria-label="Remove {{ goal.title }}">Remove</button>
+                </form>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <p>No goals yet</p>
+          <span>Add one above to give your focus a place to start.</span>
+        </div>
+      {% endif %}
+    </section>
+  </main>
+</body>
+</html>
